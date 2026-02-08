@@ -2,11 +2,21 @@
 
 namespace App\Domain\Ride\Services;
 
+use App\Domain\Location\Services\MapboxService;
+use Exception;
+use Illuminate\Support\Facades\Log;
+
 class RideEstimationService
 {
+    protected MapboxService $mapboxService;
+
+    public function __construct(MapboxService $mapboxService)
+    {
+        $this->mapboxService = $mapboxService;
+    }
     /**
      * Estimate ride with distance, ETA, and price
-     * 
+     *
      * @param string|array $pickup Pickup address or [lat, lng]
      * @param string|array $dropoff Dropoff address or [lat, lng]
      * @return array
@@ -42,7 +52,7 @@ class RideEstimationService
 
     /**
      * Calculate distance between two coordinates using Haversine formula
-     * 
+     *
      * @param float $lat1
      * @param float $lon1
      * @param float $lat2
@@ -68,7 +78,7 @@ class RideEstimationService
 
     /**
      * Calculate price based on distance and duration
-     * 
+     *
      * @param float $distance
      * @param int $duration
      * @return float
@@ -83,20 +93,26 @@ class RideEstimationService
     }
 
     /**
-     * Convert address to coordinates
-     * In production, use a geocoding service like Mapbox, Google Maps, etc.
-     * 
+     * Convert address to coordinates using Mapbox
+     *
      * @param string $address
      * @return array [latitude, longitude]
+     * @throws Exception
      */
     private function geocodeAddress(string $address): array
     {
-        // For now, return mock coordinates
-        // In production, integrate with a geocoding API
-        // Example: Mapbox Geocoding API, Google Geocoding API
-        
-        // Mock: return Casablanca coordinates as default
-        // In real implementation, you would call an API here
-        return [33.5731, -7.5898];
+        try {
+            return $this->mapboxService->geocode($address);
+        } catch (Exception $e) {
+            // Log error but don't fail the entire estimation
+            // Fallback to mock coordinates for development
+            Log::warning('Mapbox geocoding failed, using fallback', [
+                'address' => $address,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Return mock coordinates as fallback (Casablanca)
+            return [33.5731, -7.5898];
+        }
     }
 }

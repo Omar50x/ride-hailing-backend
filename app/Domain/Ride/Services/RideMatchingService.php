@@ -4,21 +4,27 @@ namespace App\Domain\Ride\Services;
 
 use App\Domain\Driver\Services\DriverAvailabilityService;
 use App\Domain\Ride\Services\RideCreationService;
+use App\Domain\Location\Services\MapboxService;
 use App\Models\Ride;
 use Illuminate\Support\Facades\Cache;
 use App\Domain\Ride\Enums\RideStatus;
+use Exception;
+use Illuminate\Support\Facades\Log;
 
 class RideMatchingService
 {
     protected $driverService;
     protected $rideLogger;
+    protected MapboxService $mapboxService;
 
     public function __construct(
         DriverAvailabilityService $driverService,
-        RideCreationService $rideLogger
+        RideCreationService $rideLogger,
+        MapboxService $mapboxService
     ) {
         $this->driverService = $driverService;
         $this->rideLogger = $rideLogger;
+        $this->mapboxService = $mapboxService;
     }
 
     /**
@@ -111,12 +117,24 @@ class RideMatchingService
     }
 
     /**
-     * Convert an address string to [lat, lng]
-     * In production, use Mapbox API
+     * Convert an address string to [lat, lng] using Mapbox
+     *
+     * @param string $address
+     * @return array [latitude, longitude]
      */
     private function geocodeAddress(string $address): array
     {
-        // Temporary mock coordinates for testing
-        return [33.5731, -7.5898]; // Casablanca example
+        try {
+            return $this->mapboxService->geocode($address);
+        } catch (Exception $e) {
+            // Log error but don't fail the entire matching process
+            Log::warning('Mapbox geocoding failed, using fallback', [
+                'address' => $address,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Return mock coordinates as fallback (Casablanca)
+            return [33.5731, -7.5898];
+        }
     }
 }

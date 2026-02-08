@@ -46,6 +46,7 @@ Complete state machine with the following flow:
 - **Cache**: Redis (for driver offers with TTL)
 - **Queue**: Laravel Queue (for async matching)
 - **Authentication**: Laravel Sanctum
+- **Location Services**: Mapbox (geocoding and location services)
 
 ## Installation
 
@@ -90,6 +91,8 @@ Complete state machine with the following flow:
    REDIS_HOST=127.0.0.1
    REDIS_PASSWORD=null
    REDIS_PORT=6379
+
+   MAPBOX_ACCESS_TOKEN=your_mapbox_access_token_here
    ```
 
 5. **Run migrations**
@@ -358,9 +361,10 @@ The codebase follows Domain-Driven Design principles:
 - Efficient driver lookup and offer management
 
 ### Location Handling
+- **Mapbox Integration**: Uses Mapbox Geocoding API for address-to-coordinates conversion
 - Uses Haversine formula for distance calculation
 - Supports both address strings and coordinates
-- In production, integrate with geocoding API (Mapbox, Google Maps, etc.)
+- Automatic fallback to mock coordinates if Mapbox API is unavailable (for development)
 
 ## Testing
 
@@ -371,7 +375,7 @@ php artisan test
 
 ## Production Considerations
 
-1. **Geocoding Service**: Replace mock geocoding with a real service (Mapbox, Google Maps)
+1. **Mapbox Configuration**: Ensure `MAPBOX_ACCESS_TOKEN` is set in production environment
 2. **Queue Workers**: Use supervisor or similar to manage queue workers
 3. **Caching**: Ensure Redis is properly configured for production
 4. **Database Indexing**: Add indexes on frequently queried fields
